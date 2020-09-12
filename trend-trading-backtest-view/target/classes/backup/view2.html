@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/header::html" >
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- 可选的 Bootstrap 主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous">
+
+    </script>
+</head>
+
+<body>
+<script>
+    $(function () {
+        var data4Vue = {
+            indexes: [],
+            currentIndex: '000300',
+
+        };
+
+        //模型视图
+        var vue = new Vue({
+            el: '#workingArea',
+            data: data4Vue,
+            mounted: function () {
+                this.init();
+                //使用bootstrap里的提示工具
+                $("[data-toggle = 'tooltip']").tooltip();
+            },
+            methods: {
+                init: function () {
+                    //访问网关的 api-codes 获取所有指数代码
+                    var url = "http://127.0.0.1:8031/api-codes/codes";
+                    axios.get(url).then(function(response) {
+                        vue.indexes = response.data;
+                    })
+
+                }
+            }
+        });
+
+    })
+</script>
+<style>
+    table.inputTable{
+        width:100%;
+    }
+    table.inputTable td{
+        padding: 20px 20px;
+    }
+    table{
+        margin:20px;
+    }
+    div#workingArea{
+        margin: 50px;
+    }
+</style>
+
+<div id="workingArea">
+    <span class="label label-info">回测参数</span>
+    <table class="inputTable">
+        <tr>
+            <td width="25%">
+                <span data-toggle="tooltip" data-placement="top" title="选择某一个指数进行模拟回测">
+                    请选择指数：<span class="glyphicon glyphicon-question-sign"></span>
+                </span>
+            </td>
+            <td width="25%">
+                <select v-model="currentIndex" class="indexSelect form-control">
+                    <option v-for="bean in indexes" :value="bean.code">{{bean.name}} - ({{bean.code}})</option>
+                </select>
+            </td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</div>
+<div th:replace="include/footer::html" ></div>
+</body>
+</html>

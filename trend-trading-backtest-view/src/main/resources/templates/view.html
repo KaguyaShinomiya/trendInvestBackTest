@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/header::html('辉夜大小姐想让我做趋势投资')" ></head>
+<body>
+<script>
+	//定义回测收益曲线图的图表对象
+	var chart4Profit = null;
+	//定义各年收益率对比柱状图的图表对象
+	var chart4ReturnEachYear = null;
+    $(function(){
+	        var data4Vue = {
+                indexes: [],
+                currentIndex: '000300',
+				indexDataList: [],
+				dates: [],
+				closePoints: [],
+				period: 20,
+				buyThreshold: 1.01,
+                sellThreshold: 0.99,
+				serviceCharge: 0.0,
+
+				//flushDate这个变量表示是否需要重新获取日期数据
+				flushDate: true,
+
+				indexStartDate: null,
+				indexEndDate: null,
+				startDate: null,
+				endDate: null,
+
+				//profits获取服务返回的profit列表，profitValues是用于作图的数组
+				profits: [],
+				profitValues: [],
+				trades:[],
+
+				//初始化指数和趋势投资的收益率数据
+				years: 0,
+				indexReturnOverall: 0,
+				indexReturnAnnual: 0,
+				trendReturnOverall: 0,
+				trendReturnAnnual: 0,
+
+				//初始化交易盈亏统计所需的数据
+				profitCount: 0,
+				avgProfitRate: 0,
+				lossCount: 0,
+				avgLossRate: 0,
+
+				//初始化各年初始化和趋势投资的收益率序列
+				returnEachYearList: [],
+				yearsList: [],
+				indexReturnEachYearList: [],
+				trendReturnEachYearList: []
+			};
+
+            //ViewModel
+            var vue = new Vue({
+                el: '#workingArea',
+                data: data4Vue,
+                mounted: function () { //mounted表示这个Vue对象加载成功了
+                    this.init();
+                    $("[data-toggle='tooltip']").tooltip();
+                },
+                methods: {
+                	//访问指数数据的url（index-codes-service）并返回指数数据放到data4Vue的indexes属性里
+                    init: function () {
+                        var url =  "http://127.0.0.1:8031/api-codes/codes";
+                        axios.get(url).then(function(response) {
+                            vue.indexes = response.data;
+                            //vue.$nextTick 的意思是表示渲染结束后，会被调用，相当于回调函数的概念
+                            vue.$nextTick(function() {
+                            	vue.simulate();
+							});
+                        });
+                    },
+					simulate: function () {
+                    	var url = "http://127.0.0.1:8031/api-backtest/simulate/" + vue.currentIndex
+								+ "/" + vue.period + "/" + vue.buyThreshold + "/" + vue.sellThreshold
+								+ "/" + vue.serviceCharge + "/" + vue.startDate + "/" + vue.endDate + "/";
+                    	axios.get(url).then(function(response) {
+                    		//清空原数据
+							vue.indexDataList = [];
+							vue.dates = [];
+							vue.closePoints = [];
+							vue.profits = [];
+							vue.profitValues = [];
+							vue.trades = [];
+							vue.returnEachYearList = [];
+							vue.yearsList = [];
+							vue.indexReturnEachYearList = [];
+							vue.trendReturnEachYearList = [];
+
+							//获得回测服务trend-trading-backtest-service返回数据，先转成json字符串再解析
+							//vue.indexDataList = response.data;
+							var responseDataString = JSON.stringify(response.data);
+							var responseDataJson = JSON.parse(responseDataString);
+							vue.indexDataList = responseDataJson.indexDataList;
+							console.log(responseDataJson.IndexDataList);
+							//从responseDataJson获取指数起始时间和终止时间
+							vue.indexStartDate = responseDataJson.indexStartDate;
+							vue.indexEndDate = responseDataJson.indexEndDate;
+							//收益数据和交易明细
+							vue.profits = responseDataJson.profits;
+							vue.trades = responseDataJson.trades;
+							//vue.indexDataList = JSON.stringify(response.data).IndexDataList;
+
+							//读取各年收益率对比柱状图所需的数据
+							vue.returnEachYearList = responseDataJson.returnEachYearList;
+							//读取收益总览表格所需的各类数据
+							vue.years = responseDataJson.years;
+							vue.indexReturnOverall = responseDataJson.indexReturnOverall;
+							vue.indexReturnAnnual = responseDataJson.indexReturnAnnual;
+							vue.trendReturnOverall = responseDataJson.trendReturnOverall;
+							vue.trendReturnAnnual = responseDataJson.trendReturnAnnual;
+							//读取交易盈亏统计表格所需的各类数据
+							vue.profitCount = responseDataJson.profitCount;
+							vue.avgProfitRate = responseDataJson.avgProfitRate;
+							vue.lossCount = responseDataJson.lossCount;
+							vue.avgLossRate = responseDataJson.avgLossRate;
+
+
+							//清空日期和收盘点位列表，遍历indexData指数数据时间序列中的日期和收盘点位并放入相应的列表中
+							// vue.dates = new Array();
+							// vue.closePoints = new Array();
+							for (var i in vue.indexDataList) {
+								var indexData = vue.indexDataList[i];
+								vue.dates.push(indexData.date);
+								vue.closePoints.push(indexData.closePoint);
+
+                                //取出profit列表中的profit的value属性
+								var profit = vue.profits[i];
+								vue.profitValues.push(profit.value);
+							}
+							//遍历returnEachYear时间序列的年份和收益率数据放入相应的列表中
+							for (var i in vue.returnEachYearList) {
+								vue.yearsList.push(vue.returnEachYearList[i].year);
+								vue.indexReturnEachYearList.push(vue.returnEachYearList[i].indexReturn * 100);
+								vue.trendReturnEachYearList.push(vue.returnEachYearList[i].trendReturn * 100);
+							}
+
+							//根据日期和收盘点位的列表利用chart.js绘制累计收益曲线图
+							chart4Profit.config.data.labels = vue.dates;
+							chart4Profit.config.data.datasets[0].label = vue.currentIndex;
+							chart4Profit.config.data.datasets[0].data = vue.closePoints;
+							chart4Profit.config.data.datasets[1].data = vue.profitValues;
+							//刷新图表
+							chart4Profit.update();
+
+							//根据年份和收益率列表，利用chart.js绘制各年收益率对比柱状图
+							chart4ReturnEachYear.config.data.labels = vue.yearsList;
+							chart4ReturnEachYear.config.data.datasets[0].label = vue.currentIndex;
+							chart4ReturnEachYear.config.data.datasets[0].data = vue.indexReturnEachYearList;
+							chart4ReturnEachYear.config.data.datasets[1].data = vue.trendReturnEachYearList;
+							//刷新图表
+							chart4ReturnEachYear.update();
+
+							if (vue.flushDate) {
+								vue.updateDate();
+							}
+						});
+					},
+					//如果不切换指数、只更新展示日期，则调用该函数，不会触发updateDate方法
+					changeParam: function () {
+						vue.flushDate = false;
+						vue.simulate();
+					},
+
+					//“选择指数”的表单内容切换时，会调用该函数刷新图表
+					changeParamWithFlushDate: function () {
+                    	vue.flushDate = true;
+                    	vue.startDate = null;
+                    	vue.endDate = null;
+                    	vue.simulate();
+					},
+
+					//日期控件bootstrap-datepicker用法参考https://bootstrap-datepicker.readthedocs.io/en/latest/
+					updateDate: function () {
+                    	/*默认以该指数的所有数据的起始时间indexStartDate和indexEndDate作为
+						发送给服务端的startDate和endDate*/
+						vue.startDate = vue.indexStartDate;
+						vue.endDate = vue.indexEndDate;
+						console.log("vue.indexStartDate：" + vue.indexStartDate);
+
+						//获取date4Start中输入的开始日期并传给startDate
+						//需要先destroy，否则后续新的日期范围如果超出了前面的日期范围，会出冲突
+						$('#date4Start').datepicker("destroy");
+						//初始化日期空间，设置了格式，语言，是否自动关闭，日期范围
+						$('#date4Start').datepicker({
+							"format": 'yyyy-mm-dd',
+							"language": "zh-CN",
+							autoClose: true,
+							startDate: vue.indexStartDate,
+							endDate: vue.indexEndDate,
+						}).on("changeDate",function(e) {
+							//点击后得到e.date对象需要转换为yyyy-mm-dd的格式作为startDate的入参
+							var month = (e.date.getMonth() + 1);
+							if(month < 10)
+								month = '0' + month;
+							var day = (e.date.getDate());
+							if (day < 10)
+								day = '0' + day;
+							vue.startDate = e.date.getFullYear() + "-" + month + "-" + day;
+
+							//需要判断开始日期是否超过结束日期，然后使用日期控件bootstrap-datepicker
+							if (!vue.checkDateRange()) {
+								$('#date4Start').datepicker('update', vue.indexStartDate);
+								return;
+							}
+
+							vue.changeParam();
+						});
+
+                        //同上，获取date4End中输入的结束日期并传给endDate
+						$('#date4End').datepicker("destroy");
+						$('#date4End').datepicker({
+							"format": 'yyyy-mm-dd',
+							"language": "zh-CN",
+							autoclose: true,
+							startDate: vue.indexStartDate,
+							endDate: vue.indexEndDate,
+						}).on("changeDate",function(e){
+							var month = (e.date.getMonth() + 1);
+							if(month < 10)
+								month = '0' + month;
+							var day = (e.date.getDate());
+							if(day < 10)
+								day = '0' + day;
+							vue.endDate = e.date.getFullYear()+ "-" + month + "-" + day;
+							if(!vue.checkDateRange()){
+								$('#date4End').datepicker('update', vue.indexEndDate);
+								return;
+							}
+
+							vue.changeParam();
+
+						});
+
+						$('#date4Start').datepicker('update', vue.indexStartDate);
+						$('#date4End').datepicker('update', vue.indexEndDate);
+					},
+
+
+					checkDateRange: function () {
+						if (null == vue.startDate || null == vue.endDate)
+							return true;
+
+						console.log("vue.startDate：" + vue.startDate);
+						console.log("vue.endDate：" + vue.endDate);
+
+						var strStartDate = vue.startDate.replace(/-/g, '/')
+						var startTime = new Date(strStartDate).getTime();
+						var strEndDate = vue.endDate.replace(/-/g, '/')
+						var endTime = new Date(strEndDate).getTime();
+						if(startTime > endTime){
+							alert("开始日期不能大于日期！");
+							return false;
+						}
+						return true;
+
+
+					}
+                }
+            });
+        //通过dom操作获取canvas4Profit类的<canvas>画布对象的2d上下文
+		var ctx4Profit = $(".canvas4Profit")[0].getContext('2d');
+		//基于该对象，传递相应参数，data属性中的labels、datasets等属性会按照上面给定的simulate函数刷新相应的数据
+		chart4Profit = new Chart(ctx4Profit, {
+			type: 'line',
+			data: {
+				labels: '',
+				//设置相关参数，如颜色，宽度，是否填充等等
+				datasets: [
+					{
+						label: '',
+						data: [],
+						borderColor: '#FF4040',
+						backgroundColor: '#FF4040',
+						borderWidth: 1.2,
+						pointRadius: 0,
+						fill: false,
+						lineTension: 0,
+					},
+					{
+						label: '趋势投资',
+						data: [],
+						borderColor: '#5D98C8',
+						backgroundColor: '#5D98C8',
+						borderWidth: 1.2,
+						pointRadius: 0,
+						fill: false,
+						lineTension: 0,
+					}
+				]
+			},
+			//responsive: true 表示有新数据的时候会重新画
+			options: {
+				title: {
+					display: true,
+					text: '指数趋势投资收益对比图'
+				},
+				responsive: true,
+				responsiveAnimationDuration:3000,
+				scales: {
+					yAxes: [{
+						ticks: {
+							beginAtZero: false,
+						}
+					}]
+				},
+				//intersect: false和mode:'index',表示当鼠标移动的时候会自动显示提示信息
+				tooltips: {
+					intersect: false,
+					mode: 'index',
+					//callbacks: 规定提示信息的格式
+					callbacks: {
+						label: function(tooltipItem, myData) {
+							var label = myData.datasets[tooltipItem.datasetIndex].label || '';
+							if (label) {
+								label += ': ';
+							}
+							label += parseFloat(tooltipItem.value).toFixed(2);
+							return label;
+						}
+					}
+				}
+			}
+		});
+
+		var ctx4ReturnEachYear = $(".canvas4ReturnEachYear")[0].getContext('2d');
+		chart4ReturnEachYear = new Chart(ctx4ReturnEachYear, {
+			type: 'bar',
+			data: {
+				labels: '',
+				datasets: [
+					{
+						label: '',
+						data: [],
+						borderColor: '#FF4040',
+						backgroundColor: '#FF4040',
+						borderWidth: 1,
+						pointRadius: 0,
+						fill: false,
+						lineTension: 0
+					},
+					{
+						label: '趋势投资',
+						data: [],
+						borderColor: '#5D98C8',
+						backgroundColor: '#5D98C8',
+						borderWidth: 1,
+						pointRadius: 0,
+						fill: false,
+						lineTension: 0
+					}
+				]
+			},
+			options: {
+				title: {
+					display: true,
+					text: '指数/趋势收益分布对比图'
+				},
+				responsive: true,
+				responsiveAnimationDuration: 3000,
+				scales: {
+					yAxes: [{
+						ticks: {
+							beginAtZero: true,
+//                          suggestedMin: -10,
+//                          suggestedMax: 200,
+						}
+					}]
+				},
+				tooltips: {
+					intersect: false,
+					mode: 'index',
+
+					callbacks: {
+						label: function (tooltipItem, myData) {
+							var label = myData.datasets[tooltipItem.datasetIndex].label || '';
+							if (label) {
+								label += ': ';
+							}
+							label += parseFloat(tooltipItem.value).toFixed(2);
+							label += "%";
+							return label;
+						}
+					}
+				}
+			}
+		})
+    });
+    
+
+</script>
+
+<style>
+	p.title{
+		margin-top: 10px;
+		font: bold 30px 华文楷体;
+	}
+
+	table.inputTable{
+	width:100%;
+	}
+
+	table.inputTable td{
+	padding:20px 20px;
+	}
+
+	table{
+	margin:20px;
+	}
+
+	div#workingArea{
+	margin:50px;
+	}
+</style>
+
+<div id="workingArea">
+	<p class="title">辉夜大小姐想让我做趋势投资</p><br/>
+	<span class="label label-info">回测参数</span>
+	<!--“请选择指数”的提示信息加上相应的下拉框-->
+	<table class="inputTable ">
+		<tr>
+			<td width="25%">
+				<span data-toggle="tooltip" data-placement="top" title="选择某一个指数进行模拟回测">
+					请选择指数:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td width="25%">
+				<!--@change 可以监听表单内容发生改变的事件-->
+				<select @change="changeParamWithFlushDate" v-model="currentIndex" class="indexSelect form-control">
+					<option v-for="bean in indexes " :value="bean.code">{{bean.name}} - ({{bean.code}})</option>
+				</select>
+			</td>
+			<td width="25%"></td>
+			<td width="25%"></td>
+		</tr>
+		<tr>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="选择移动均线MA的移动平均周期">
+					MA(均线):<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td>
+				<!--@change 可以监听表单内容发生改变的事件-->
+				<select @change="changeParam" v-model="period" class="indexSelect form-control">
+					<option value="5">5日</option>
+					<option value="10">10日</option>
+					<option value="20">20日</option>
+					<option value="60">60日</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="只有当收盘价相比于均线的比率高于购买阈值时才会买入">
+					购买阈值:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td>
+				<!--@change 可以监听表单内容发生改变的事件-->
+				<select @change="changeParam" v-model="buyThreshold" class="indexSelect form-control">
+					<option v-for="i in 9">{{i / 100 + 1 |formatNumberFilter(2)}}</option>
+				</select>
+			</td>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="只有当收盘价相比于MA周期内最高点的比率低于出售阈值时才会卖出">
+					出售阈值:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td>
+				<!--@change 可以监听表单内容发生改变的事件-->
+				<select @change="changeParam" v-model="sellThreshold" class="indexSelect form-control">
+					<option v-for="i in 9">{{1 - i / 100 |formatNumberFilter(2)}}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="每笔交易的手续费费率">
+					手续费费率:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td>
+				<!--@change 可以监听表单内容发生改变的事件-->
+				<select @change="changeParam" v-model="serviceCharge" class="indexSelect form-control">
+					<option value="0">0</option>
+					<option value="0.001">0.001</option>
+					<option value="0.0015">0.0015</option>
+					<option value="0.002">0.002</option>
+					<option value="0.005">0.005</option>
+				</select>
+			</td>
+		</tr>
+		<!--选择开始日期和结束日期-->
+		<tr>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="指定模拟回测的开始日期，默认是当前指数最开始的日期">
+					开始日期:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+
+			<td>
+				<div class="form-group">
+					<div class="input-group date" id="date4Start">
+						<input type="text" readOnly="readOnly" class="form-control">
+						<span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
+					</div>
+				</div>
+			</td>
+			<td>
+				<span data-toggle="tooltip" data-placement="top" title="指定模拟回测的结束日期，默认是当前指数最后的日期">
+					结束日期:<span class="glyphicon glyphicon-question-sign"></span>
+				</span>
+			</td>
+			<td>
+				<div class="form-group">
+					<div class="input-group date" id="date4End">
+						<input type="text" readOnly="readOnly" class="form-control">
+						<span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
+					</div>
+				</div>
+			</td>
+		</tr>
+	</table>
+
+	<!--回测收益的曲线图-->
+	<div class="label label-warning">收益对比图</div>
+	<div  class="div4chart" style="margin:0px auto; width:80%">
+		<canvas class="canvas4Profit"></canvas>
+	</div>
+
+	<!--收益总览的表格-->
+	<div class="label label-warning">收益一览</div>
+	<table class="table table-striped table-bordered table-condensed">
+		<thead>
+		<th>投资类型</th>
+		<th>投资时长 (年)</th>
+		<th>1000元投资收益</th>
+		<th>总收益率</th>
+		<th>年化收益率</th>
+		</thead>
+		<tbody>
+		<tr>
+			<td>指数投资</td>
+			<td>{{years | formatNumberFilter(2)}}</td>
+			<td>{{(indexReturnOverall + 1) * 1000 | formatMoneyFilter}}</td>
+			<td>{{indexReturnOverall * 100 | formatNumberFilter(2)}}%</td>
+			<td>{{indexReturnAnnual * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		<tr>
+			<td>趋势投资</td>
+			<td>{{years | formatNumberFilter(2)}}</td>
+			<td>{{(trendReturnOverall + 1) * 1000 | formatMoneyFilter}}</td>
+			<td>{{trendReturnOverall * 100 | formatNumberFilter(2)}}%</td>
+			<td>{{trendReturnAnnual * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		<tr>
+			<td>相对收益</td>
+			<td>N/A</td>
+			<td>{{(trendReturnOverall - indexReturnOverall) * 1000 | formatMoneyFilter}}</td>
+			<td>{{(trendReturnOverall - indexReturnOverall) * 100 | formatNumberFilter(2)}}%</td>
+			<td>{{(trendReturnAnnual - indexReturnAnnual) * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<!--交易盈亏统计的表格-->
+	<div class="label label-warning">交易统计</div>
+	<table class="table table-bordered table-condensed">
+		<thead>
+		<th align="center" colspan="2">趋势投资盈亏统计</th>
+		</thead>
+		<tbody>
+		<tr>
+			<td width="50%">总共交易次数</td>
+			<td>{{profitCount + lossCount}}</td>
+		</tr>
+		<tr>
+			<td>盈利交易次数</td>
+			<td>{{profitCount}}</td>
+		</tr>
+		<tr>
+			<td>平均盈利幅度</td>
+			<td>{{avgProfitRate * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		<tr>
+			<td>亏损交易次数</td>
+			<td>{{lossCount}}</td>
+		</tr>
+		<tr>
+			<td>平均亏损幅度</td>
+			<td>{{avgLossRate * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		<tr>
+			<td>胜率</td>
+			<td>{{profitCount / (profitCount + lossCount) * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<!--各年收益率对比的表格-->
+	<div class="label label-warning">收益分布对比表</div>
+	<table class="table table-striped table-bordered table-condensed table-hover">
+		<thead>
+		<th>年份</th>
+		<th>指数收益</th>
+		<th>趋势投资收益</th>
+		</thead>
+		<tbody>
+		<tr v-for="bean in returnEachYearList">
+			<td>{{bean.year}}</td>
+			<td>{{bean.indexReturn * 100 | formatNumberFilter(2)}}%</td>
+			<td>{{bean.trendReturn * 100 | formatNumberFilter(2)}}%</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<!--各年收益率对比的柱状图-->
+	<div class="label label-warning">收益分布对比图</div>
+	<div class="div4chart" style="margin:0px auto; width:80%">
+		<canvas class="canvas4ReturnEachYear"></canvas>
+	</div>
+
+	<!--交易明细的表格-->
+	<div class="label label-warning">交易明细</div>
+	<table class="table table-striped table-bordered table-condensed table-hover">
+		<thead>
+		<th>盈/亏</th>
+		<th>购买日期</th>
+		<th>购买盘点</th>
+		<th>出售日期</th>
+		<th>出售盘点</th>
+		<th>盈亏比率</th>
+		<th>1000元投资收益</th>
+		</thead>
+		<tbody>
+		<tr v-for="bean in trades">
+			<td>
+				<span v-if="bean.sellClosePoint>bean.buyClosePoint" class="label label-danger">
+					盈利
+				</span>
+				<span v-if="bean.sellClosePoint<=bean.buyClosePoint" class="label label-success">
+					亏损
+				</span>
+			</td>
+			<td>{{bean.buyDate}}</td>
+			<td>{{bean.buyClosePoint}}</td>
+			<td>{{bean.sellDate}}</td>
+			<td>
+				<span v-if="bean.sellClosePoint==0">N/A</span>
+				<span v-if="bean.sellClosePoint!=0">{{bean.sellClosePoint}}</span>
+			</td>
+
+			<td>
+				<span v-if="bean.sellClosePoint==0">N/A</span>
+				<span v-bind:class="{'text-danger':bean.sellClosePoint>bean.buyClosePoint,
+				'text-success':bean.sellClosePoint<=bean.buyClosePoint}"
+					  v-if="bean.sellClosePoint!=0">
+					{{(bean.sellClosePoint / bean.buyClosePoint - 1) * 100 | formatNumberFilter(2)}}%</span>
+			</td>
+			<td>
+				<span v-if="bean.sellClosePoint==0">N/A</span>
+				<span v-if="bean.sellClosePoint!=0">{{bean.rate * 1000 | | formatMoneyFilter}}</span>
+			</td>
+		</tr>
+		</tbody>
+	</table>
+</div>
+
+<div th:replace="include/footer::html" ></div>
+
+</body>
+</html>
