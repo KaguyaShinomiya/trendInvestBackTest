@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="df3b2544-f733-4943-aa6a-9b8b58acbed0" name="Default Changelist" comment="" />
+    <list default="true" id="df3b2544-f733-4943-aa6a-9b8b58acbed0" name="Default Changelist" comment="提交【辉夜大小姐想让我做趋势投资】的代码">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,6 +17,14 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -24,6 +34,7 @@
     </option>
   </component>
   <component name="ProjectId" id="1fxaETXmO0tdRkDv0eAMr5V0DWq" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -39,11 +50,11 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="android.sdk.path" value="D:/AndroidSdk" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/trend-trading-backtest-view/src/main/resources/templates" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.0" />
-    <property name="settings.editor.selected.configurable" value="MavenSettings" />
+    <property name="settings.editor.selected.configurable" value="org.jetbrains.plugins.github.ui.GithubSettingsConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -186,12 +197,24 @@
       <workItem from="1599565632078" duration="9604000" />
       <workItem from="1599745079914" duration="2832000" />
       <workItem from="1599889203585" duration="4573000" />
-      <workItem from="1599915443621" duration="1921000" />
+      <workItem from="1599915443621" duration="4614000" />
     </task>
+    <task id="LOCAL-00001" summary="提交【辉夜大小姐想让我做趋势投资】的代码">
+      <created>1599918266709</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1599918266709</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="2" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="提交【辉夜大小姐想让我做趋势投资】的代码" />
+    <option name="LAST_COMMIT_MESSAGE" value="提交【辉夜大小姐想让我做趋势投资】的代码" />
   </component>
   <component name="WindowStateProjectService">
     <state x="334" y="35" key="#Project_Structure" timestamp="1599051742551">
@@ -218,10 +241,10 @@
       <screen x="0" y="0" width="1707" height="920" />
     </state>
     <state x="383" y="288" width="941" height="345" key="#com.intellij.structuralsearch.plugin.ui.StructuralSearchDialog/0.0.1707.920@0.0.1707.920" timestamp="1598448926804" />
-    <state x="634" y="216" key="FileChooserDialogImpl" timestamp="1599134692746">
+    <state x="634" y="216" key="FileChooserDialogImpl" timestamp="1599917719915">
       <screen x="0" y="0" width="1707" height="920" />
     </state>
-    <state x="634" y="216" key="FileChooserDialogImpl/0.0.1707.920@0.0.1707.920" timestamp="1599134692746" />
+    <state x="634" y="216" key="FileChooserDialogImpl/0.0.1707.920@0.0.1707.920" timestamp="1599917719915" />
     <state width="1663" height="233" key="GridCell.Tab.0.bottom" timestamp="1599916001713">
       <screen x="0" y="0" width="1707" height="920" />
     </state>
@@ -254,10 +277,14 @@
       <screen x="0" y="0" width="1707" height="920" />
     </state>
     <state width="1663" height="233" key="GridCell.Tab.1.right/0.0.1707.920@0.0.1707.920" timestamp="1599915417019" />
-    <state x="355" y="105" key="SettingsEditor" timestamp="1599915217885">
+    <state x="355" y="70" key="SettingsEditor" timestamp="1599920493000">
       <screen x="0" y="0" width="1707" height="920" />
     </state>
-    <state x="355" y="105" key="SettingsEditor/0.0.1707.920@0.0.1707.920" timestamp="1599915217885" />
+    <state x="355" y="70" key="SettingsEditor/0.0.1707.920@0.0.1707.920" timestamp="1599920493000" />
+    <state x="446" y="194" key="Vcs.Push.Dialog.v2" timestamp="1599919117732">
+      <screen x="0" y="0" width="1707" height="920" />
+    </state>
+    <state x="446" y="194" key="Vcs.Push.Dialog.v2/0.0.1707.920@0.0.1707.920" timestamp="1599919117732" />
     <state x="552" y="61" width="614" height="798" key="find.popup" timestamp="1599577403130">
       <screen x="0" y="0" width="1707" height="920" />
     </state>
